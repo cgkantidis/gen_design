@@ -1,0 +1,21 @@
+set(TARGET_NAME gen_verilog)
+
+add_executable(${TARGET_NAME} gen_verilog.cpp)
+target_add_warnings(${TARGET_NAME})
+target_link_libraries(${TARGET_NAME} PRIVATE fmt::fmt)
+if(WRITE_COMPRESSED)
+  target_compile_definitions(${TARGET_NAME} PRIVATE WRITE_COMPRESSED)
+  target_include_directories(${TARGET_NAME} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
+  target_link_libraries(${TARGET_NAME} PRIVATE Boost::iostreams)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL Profile)
+  target_link_options(${TARGET_NAME} PRIVATE "-pg")
+elseif(CMAKE_BUILD_TYPE STREQUAL HeapProfile)
+  target_link_libraries(${TARGET_NAME} PRIVATE tcmalloc)
+elseif(CMAKE_BUILD_TYPE STREQUAL TSAN)
+  target_link_options(${TARGET_NAME} PRIVATE -fsanitize=thread)
+elseif(CMAKE_BUILD_TYPE STREQUAL MSAN)
+  target_link_options(${TARGET_NAME} PRIVATE -fsanitize=memory)
+endif()
+
