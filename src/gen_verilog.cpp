@@ -83,7 +83,6 @@ void write_cells(OSTREAM &outfile) {
 }
 
 int main() {
-
 #ifdef WRITE_COMPRESSED
   static constexpr std::string filename{module_name + ".v.gz"};
   boost::iostreams::filtering_ostreambuf buf;
