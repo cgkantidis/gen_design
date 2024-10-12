@@ -11,18 +11,7 @@
 #include <fmt/ostream.h>
 #include <string>
 
-// 1'000'000 x 4'500 = 4.5B, which is a little larger than 2^32
-static constexpr std::size_t num_nets{10};
-static constexpr std::size_t num_blocks{2};
-static constexpr std::size_t num_cols{80};
-static constexpr std::string block_name{"block"};
-static constexpr std::string top_name{"top"};
-static constexpr std::string block_prefix{"b"};
-static constexpr std::string cell_prefix{"u"};
-static constexpr std::string net_prefix{"n"};
-static constexpr std::string lib_cell_name{"IV"};
-static constexpr std::string lib_cell_inp_pin{"A"};
-static constexpr std::string lib_cell_out_pin{"Z"};
+#include "common.hpp"
 
 template <typename OSTREAM>
 void write_wires(OSTREAM &os) {
