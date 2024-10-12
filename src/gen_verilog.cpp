@@ -11,7 +11,7 @@
 #include <fmt/ostream.h>
 #include <string>
 
-static constexpr std::size_t num_nets{100'000};
+static constexpr std::size_t num_nets{100'000'000};
 static constexpr std::size_t num_cols{80};
 static constexpr std::string module_name{"top"};
 static constexpr std::string cell_prefix{"u"};
@@ -80,6 +80,19 @@ void write_cells(OSTREAM &outfile) {
         net_prefix,
         net_idx);
   }
+  // leaf cells
+  for (std::size_t net_idx = num_nets; net_idx < 2 * num_nets; ++net_idx) {
+    fmt::println(
+        outfile,
+        "  {} {}{}(.{}({}{}), .{}());",
+        lib_cell_name,
+        cell_prefix,
+        net_idx,
+        lib_cell_inp_pin,
+        net_prefix,
+        net_idx / 2,
+        lib_cell_out_pin);
+  }
 }
 
 int main() {
@@ -94,7 +107,7 @@ int main() {
   std::ofstream outfile(filename);
 #endif
 
-  fmt::println(outfile, "module {}(A)", module_name);
+  fmt::println(outfile, "module {}(A);", module_name);
   fmt::println(outfile, "  input A;");
   write_wires(outfile);
   write_cells(outfile);

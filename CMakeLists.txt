@@ -6,8 +6,8 @@ project(gen_design
   LANGUAGES CXX)
 
 # set the C++ standard
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED 20)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # generate the compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -18,7 +18,14 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
   OVERRIDE_FIND_PACKAGE
 )
+FetchContent_Declare(
+  libassert
+  GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
+  GIT_TAG origin/main
+  OVERRIDE_FIND_PACKAGE
+)
 find_package(fmt REQUIRED)
+find_package(libassert REQUIRED)
 
 set(WRITE_COMPRESSED OFF CACHE BOOL "Write a compressed output file (OFF by default)")
 if(WRITE_COMPRESSED)
