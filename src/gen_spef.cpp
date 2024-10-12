@@ -4,9 +4,9 @@
 
 #include "spef.hpp"
 
-static constexpr std::size_t num_nets{100'000'000};
+static constexpr std::size_t num_nets{10};
 static constexpr std::size_t num_cols{80};
-static constexpr std::string module_name{"top"};
+static constexpr std::string block_name{"block"};
 static constexpr std::string cell_prefix{"u"};
 static constexpr std::string net_prefix{"n"};
 static constexpr std::string lib_cell_name{"IV"};
@@ -23,7 +23,7 @@ double rv() {
 
 void gen_header(SPEF_file &spef) {
   spef.m_header_def.m_SPEF_version = "IEEE 1481-1999";
-  spef.m_header_def.m_design_name = module_name;
+  spef.m_header_def.m_design_name = block_name;
   {
     std::time_t now = std::time(nullptr);
     std::array<char, 80> date_buf;
@@ -190,13 +190,13 @@ void gen_nets(SPEF_file &spef) {
 
 int main() {
 #ifdef WRITE_COMPRESSED
-  static constexpr std::string filename{module_name + ".spef.gz"};
+  static constexpr std::string filename{block_name + ".spef.gz"};
   boost::iostreams::filtering_ostreambuf buf;
   buf.push(boost::iostreams::gzip_compressor());
   buf.push(boost::iostreams::file_sink(filename));
   std::ostream os(&buf);
 #else
-  static constexpr std::string filename{module_name + ".spef"};
+  static constexpr std::string filename{block_name + ".spef"};
   std::ofstream os(filename);
 #endif
 
