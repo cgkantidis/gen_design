@@ -14,36 +14,84 @@
 #include "common.hpp"
 
 template <typename OSTREAM>
+void write_wrapped_too_long_indent(
+    OSTREAM &os,
+    std::string const &str,
+    std::size_t first_indent,
+    std::size_t rest_indent) {
+  std::string first_indent_str(first_indent, ' ');
+  std::string rest_indent_str(rest_indent, ' ');
+
+  std::size_t left = 0;
+  while (left < str.size()) {
+    std::size_t right = left;
+    while (right < str.size() && str[right] != ' ') {
+      ++right;
+    }
+    fmt::println(
+        os,
+        "{}{}",
+        left == 0 ? first_indent_str : rest_indent_str,
+        str.substr(left, right - left));
+    left = right + 1;
+  }
+}
+
+template <typename OSTREAM>
+void write_wrapped(
+    OSTREAM &os,
+    std::string const &str,
+    std::size_t first_indent,
+    std::size_t rest_indent,
+    std::size_t column) {
+  std::string first_indent_str(first_indent, ' ');
+  std::string rest_indent_str(rest_indent, ' ');
+
+  if (first_indent >= column || rest_indent >= column) {
+    write_wrapped_too_long_indent(os, str, first_indent, rest_indent);
+    return;
+  }
+
+  std::size_t left = 0;
+  while (left < str.size()) {
+    std::size_t right =
+        left + column - (left == 0 ? first_indent : rest_indent);
+    if (right >= str.size()) {
+      break;
+    }
+    while (right > left && str[right] != ' ') {
+      --right;
+    }
+    if (right == left) {
+      while (right < str.size() && str[right] != ' ') {
+        ++right;
+      }
+    }
+    if (right >= str.size()) {
+      break;
+    }
+    fmt::println(
+        os,
+        "{}{}",
+        left == 0 ? first_indent_str : rest_indent_str,
+        str.substr(left, right - left));
+    left = right + 1;
+  }
+  fmt::println(
+      os,
+      "{}{}",
+      left == 0 ? first_indent_str : rest_indent_str,
+      str.substr(left, str.size() - left));
+}
+
+template <typename OSTREAM>
 void write_wires(OSTREAM &os) {
-  static constexpr std::size_t net_prefix_sz{net_prefix.size()};
-  std::string wire_line;
-  std::size_t num_digits = 1;
-  std::size_t last_idx = 1;
+  std::string wire_line = fmt::format("wire {}1", net_prefix);
   for (std::size_t net_idx = 1; net_idx < num_nets; ++net_idx) {
-    if (wire_line.empty()) {
-      wire_line = std::string("  wire ") + net_prefix + std::to_string(net_idx);
-      continue;
-    }
-
-    if (net_idx >= 10 * last_idx) {
-      ++num_digits;
-      last_idx = net_idx;
-    }
-
-    std::size_t next_wire_sz = 2 /*, */ + net_prefix_sz + num_digits;
-    if (wire_line.size() + next_wire_sz + 1 >= num_cols) {
-      fmt::println(os, "{};", wire_line);
-      wire_line = "  wire ";
-    } else {
-      wire_line.append(", ");
-    }
-    wire_line.append(net_prefix);
-    wire_line.append(std::to_string(net_idx));
+    wire_line += fmt::format(", {}{}", net_prefix, net_idx);
   }
-
-  if (!wire_line.empty()) {
-    fmt::println(os, "{};", wire_line);
-  }
+  wire_line += ";";
+  write_wrapped(os, wire_line, 2, 2, num_cols);
 }
 
 template <typename OSTREAM>
@@ -117,38 +165,22 @@ void write_top() {
   static constexpr std::string filename{top_name + ".v"};
   std::ofstream os(filename);
 #endif
-  fmt::println(os, "module {}(", top_name);
-  for (std::size_t block_idx = 0; block_idx < num_blocks - 1; ++block_idx) {
-    fmt::println(os, "  A{},", block_idx + 1);
-  }
-  fmt::println(os, "  A{});", num_blocks);
-
-  std::string input_line;
-  std::size_t num_digits = 1;
-  std::size_t last_idx = 1;
-  for (std::size_t block_idx = 1; block_idx <= num_blocks; ++block_idx) {
-    if (input_line.empty()) {
-      input_line = fmt::format("  input A{}", block_idx);
-      continue;
+  {
+    std::string module_line = fmt::format("module {}(A1", top_name);
+    for (std::size_t block_idx = 2; block_idx <= num_blocks; ++block_idx) {
+      module_line += fmt::format(", A{}", block_idx);
     }
-
-    if (block_idx >= 10 * last_idx) {
-      ++num_digits;
-      last_idx = block_idx;
-    }
-
-    std::size_t next_input_sz = 3 /*, A*/ + num_digits;
-    if (input_line.size() + next_input_sz + 1 >= num_cols) {
-      fmt::println(os, "{};", input_line);
-      input_line = "  input ";
-    } else {
-      input_line.append(", ");
-    }
-    input_line += fmt::format("A{}", block_idx);
+    module_line += ");";
+    write_wrapped(os, module_line, 0, 2, num_cols);
   }
 
-  if (!input_line.empty()) {
-    fmt::println(os, "{};", input_line);
+  {
+    std::string input_line = fmt::format("input A1");
+    for (std::size_t block_idx = 2; block_idx <= num_blocks; ++block_idx) {
+      input_line += fmt::format(", A{}", block_idx);
+    }
+    input_line += ";";
+    write_wrapped(os, input_line, 2, 2, num_cols);
   }
 
   for (std::size_t block_idx = 0; block_idx < num_blocks; ++block_idx) {
