@@ -56,14 +56,14 @@ void gen_top_ports(SPEF_file &spef) {
 
 void gen_block_net_net_ref(d_net &net, std::size_t net_idx) {
   if (net_idx != 0) {
-    net.m_net_ref = std::format("{}{}", net_prefix, net_idx);
+    net.m_net_ref = fmt::format("{}{}", net_prefix, net_idx);
   } else {
     net.m_net_ref = "A";
   }
 }
 
 void gen_top_net_net_ref(d_net &net, std::size_t block_idx) {
-  net.m_net_ref = std::format("A{}", block_idx + 1);
+  net.m_net_ref = fmt::format("A{}", block_idx + 1);
 }
 
 void gen_block_net_conn_def(
@@ -81,6 +81,8 @@ void gen_block_net_conn_def(
     return;
   }
 
+  bool const is_net_to_leaf_cell = net_idx >= num_nets / 2;
+
   std::string driver_pin = fmt::format(
       "{}{}{}{}",
       cell_prefix,
@@ -92,13 +94,13 @@ void gen_block_net_conn_def(
       cell_prefix,
       net_idx * 2,
       pin_delim_ch,
-      lib_cell_inp_pin);
+      is_net_to_leaf_cell ? lib_leaf_cell_d_pin : lib_cell_inp_pin);
   std::string load_pin2 = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx * 2 + 1,
       pin_delim_ch,
-      lib_cell_inp_pin);
+      is_net_to_leaf_cell ? lib_leaf_cell_d_pin : lib_cell_inp_pin);
   std::string internal_node =
       fmt::format("{}{}{}1", net_prefix, net_idx, pin_delim_ch);
 
@@ -135,24 +137,26 @@ void gen_block_net_cap_sec_ground(
     return;
   }
 
-  std::string driver_pin = std::format(
+  bool const is_net_to_leaf_cell = net_idx >= num_nets / 2;
+
+  std::string driver_pin = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx,
       pin_delim_ch,
       lib_cell_out_pin);
-  std::string load_pin1 = std::format(
+  std::string load_pin1 = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx * 2,
       pin_delim_ch,
-      lib_cell_inp_pin);
-  std::string load_pin2 = std::format(
+      is_net_to_leaf_cell ? lib_leaf_cell_d_pin : lib_cell_inp_pin);
+  std::string load_pin2 = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx * 2 + 1,
       pin_delim_ch,
-      lib_cell_inp_pin);
+      is_net_to_leaf_cell ? lib_leaf_cell_d_pin : lib_cell_inp_pin);
   std::string internal_node =
       fmt::format("{}{}{}1", net_prefix, net_idx, pin_delim_ch);
 
@@ -182,24 +186,26 @@ void gen_block_net_res_sec(d_net &net, std::size_t net_idx, char pin_delim_ch) {
     return;
   }
 
-  std::string driver_pin = std::format(
+  bool const is_net_to_leaf_cell = net_idx >= num_nets / 2;
+
+  std::string driver_pin = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx,
       pin_delim_ch,
       lib_cell_out_pin);
-  std::string load_pin1 = std::format(
+  std::string load_pin1 = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx * 2,
       pin_delim_ch,
-      lib_cell_inp_pin);
-  std::string load_pin2 = std::format(
+      is_net_to_leaf_cell ? lib_leaf_cell_d_pin : lib_cell_inp_pin);
+  std::string load_pin2 = fmt::format(
       "{}{}{}{}",
       cell_prefix,
       net_idx * 2 + 1,
       pin_delim_ch,
-      lib_cell_inp_pin);
+      is_net_to_leaf_cell ? lib_leaf_cell_d_pin : lib_cell_inp_pin);
   std::string internal_node =
       fmt::format("{}{}{}1", net_prefix, net_idx, pin_delim_ch);
 

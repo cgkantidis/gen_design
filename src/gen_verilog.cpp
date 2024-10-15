@@ -125,14 +125,13 @@ void write_cells(OSTREAM &os) {
   for (std::size_t net_idx = num_nets; net_idx < 2 * num_nets; ++net_idx) {
     fmt::println(
         os,
-        "  {} {}{}(.{}({}{}), .{}());",
-        lib_cell_name,
+        "  {} {}{}(.{}({}{}));",
+        lib_leaf_cell_name,
         cell_prefix,
         net_idx,
-        lib_cell_inp_pin,
+        lib_leaf_cell_d_pin,
         net_prefix,
-        net_idx / 2,
-        lib_cell_out_pin);
+        net_idx / 2);
   }
 }
 

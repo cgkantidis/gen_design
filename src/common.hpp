@@ -14,3 +14,5 @@ static constexpr std::string net_prefix{"n"};
 static constexpr std::string lib_cell_name{"IV"};
 static constexpr std::string lib_cell_inp_pin{"A"};
 static constexpr std::string lib_cell_out_pin{"Z"};
+static constexpr std::string lib_leaf_cell_name{"FD1"};
+static constexpr std::string lib_leaf_cell_d_pin{"D"};
