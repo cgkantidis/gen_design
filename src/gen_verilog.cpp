@@ -87,7 +87,7 @@ void write_wrapped(
 template <typename OSTREAM>
 void write_wires(OSTREAM &os) {
   std::string wire_line = fmt::format("wire {}1", net_prefix);
-  for (std::size_t net_idx = 1; net_idx < num_nets; ++net_idx) {
+  for (std::size_t net_idx = 2; net_idx < num_nets; ++net_idx) {
     wire_line += fmt::format(", {}{}", net_prefix, net_idx);
   }
   wire_line += ";";
