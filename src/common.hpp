@@ -16,3 +16,6 @@ static constexpr std::string lib_cell_inp_pin{"A"};
 static constexpr std::string lib_cell_out_pin{"Z"};
 static constexpr std::string lib_leaf_cell_name{"FD1"};
 static constexpr std::string lib_leaf_cell_d_pin{"D"};
+static constexpr double MIN_CAP_VAL{1.0};
+static constexpr double MAX_CAP_VAL{5.0};
+static constexpr std::size_t MIN_CCAPS{5};

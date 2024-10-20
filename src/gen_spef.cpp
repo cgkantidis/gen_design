@@ -5,12 +5,25 @@
 #include "common.hpp"
 #include "spef.hpp"
 
-// generate random value
-double rv() {
+std::mt19937_64 &get_gen() {
   static std::random_device rd;
   static std::mt19937_64 gen(rd());
-  static std::uniform_real_distribution<> dis(1.0, 5.0);
-  return dis(gen);
+  return gen;
+}
+
+std::uniform_real_distribution<double> &get_cap_dist() {
+  static std::uniform_real_distribution<> dist(MIN_CAP_VAL, MAX_CAP_VAL);
+  return dist;
+}
+
+template <typename IndexType>
+std::uniform_int_distribution<IndexType>
+get_idx_dist(IndexType min_idx, IndexType max_idx) {
+  return std::uniform_int_distribution<IndexType>(min_idx, max_idx);
+}
+
+double rand_cap() {
+  return get_cap_dist()(get_gen());
 }
 
 void gen_header(SPEF_file &spef, std::string design_name) {
@@ -132,8 +145,8 @@ void gen_block_net_cap_sec_ground(
     std::string driver_pin = "A";
     std::string load_pin =
         fmt::format("{}1{}{}", cell_prefix, pin_delim_ch, lib_cell_inp_pin);
-    net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rv()}));
-    net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {rv()}));
+    net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rand_cap()}));
+    net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {rand_cap()}));
     return;
   }
 
@@ -160,10 +173,51 @@ void gen_block_net_cap_sec_ground(
   std::string internal_node =
       fmt::format("{}{}{}1", net_prefix, net_idx, pin_delim_ch);
 
-  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rv()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(load_pin1, {rv()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(load_pin2, {rv()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(internal_node, {rv()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(load_pin1, {rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(load_pin2, {rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(internal_node, {rand_cap()}));
+}
+
+std::string const &get_rand_node(conn_sec const &conns) {
+  auto const &pins = conns.m_conn_def;
+  auto const &nodes = conns.m_internal_node_coord;
+  auto const num_pins = pins.size();
+  auto const num_nodes = num_pins + nodes.size();
+
+  auto &gen = get_gen();
+  auto node_idx_dist = get_idx_dist<std::size_t>(0, num_nodes - 1);
+  auto node_idx = node_idx_dist(gen);
+  if (node_idx < num_pins) {
+    return pins[node_idx].m_name;
+  }
+  return nodes[node_idx - num_pins].m_internal_node.first;
+}
+
+void gen_block_net_cap_sec_coupling(std::vector<d_net> &nets) {
+  auto &gen = get_gen();
+  auto net_idx_dist = get_idx_dist<std::size_t>(0, nets.size() - 1);
+
+  for (std::size_t idx1 = 0; idx1 < nets.size(); ++idx1) {
+    // we have 4 ground caps already
+    while (nets[idx1].m_cap_sec.m_caps.size() < MIN_CCAPS + 4) {
+
+      std::size_t idx2 = net_idx_dist(gen);
+      // don't generate self-coupling caps
+      while (idx1 == idx2) {
+        idx2 = net_idx_dist(gen);
+      }
+
+      d_net &net1 = nets[idx1];
+      d_net &net2 = nets[idx2];
+
+      std::string const &node1 = get_rand_node(net1.m_conn_sec);
+      std::string const &node2 = get_rand_node(net2.m_conn_sec);
+      auto caps = {rand_cap()};
+      net1.m_cap_sec.m_caps.emplace_back(node1, node2, caps);
+      net2.m_cap_sec.m_caps.emplace_back(node2, node1, caps);
+    }
+  }
 }
 
 void gen_top_net_cap_sec_ground(
@@ -173,8 +227,33 @@ void gen_top_net_cap_sec_ground(
   std::string driver_pin = fmt::format("A{}", block_idx + 1);
   std::string load_pin =
       fmt::format("{}{}{}A", block_prefix, block_idx + 1, hier_div_ch);
-  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rv()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {rv()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {rand_cap()}));
+}
+
+void gen_top_net_cap_sec_coupling(std::vector<d_net> &nets) {
+  auto &gen = get_gen();
+  auto net_idx_dist = get_idx_dist<std::size_t>(0, nets.size() - 1);
+
+  for (std::size_t idx1 = 0; idx1 < nets.size(); ++idx1) {
+    // we have 2 ground caps already
+    while (nets[idx1].m_cap_sec.m_caps.size() < MIN_CCAPS + 2) {
+      std::size_t idx2 = net_idx_dist(gen);
+      // don't generate self-coupling caps
+      while (idx1 == idx2) {
+        idx2 = net_idx_dist(gen);
+      }
+
+      d_net &net1 = nets[idx1];
+      d_net &net2 = nets[idx2];
+
+      std::string const &node1 = get_rand_node(net1.m_conn_sec);
+      std::string const &node2 = get_rand_node(net2.m_conn_sec);
+      auto caps = {rand_cap()};
+      net1.m_cap_sec.m_caps.emplace_back(node1, node2, caps);
+      net2.m_cap_sec.m_caps.emplace_back(node2, node1, caps);
+    }
+  }
 }
 
 void gen_block_net_res_sec(d_net &net, std::size_t net_idx, char pin_delim_ch) {
@@ -182,7 +261,7 @@ void gen_block_net_res_sec(d_net &net, std::size_t net_idx, char pin_delim_ch) {
     std::string driver_pin = "A";
     std::string load_pin =
         fmt::format("{}1{}{}", cell_prefix, pin_delim_ch, lib_cell_inp_pin);
-    net.m_res_sec.m_ress.emplace_back(res(driver_pin, load_pin, {rv()}));
+    net.m_res_sec.m_ress.emplace_back(res(driver_pin, load_pin, {rand_cap()}));
     return;
   }
 
@@ -209,16 +288,19 @@ void gen_block_net_res_sec(d_net &net, std::size_t net_idx, char pin_delim_ch) {
   std::string internal_node =
       fmt::format("{}{}{}1", net_prefix, net_idx, pin_delim_ch);
 
-  net.m_res_sec.m_ress.emplace_back(res(driver_pin, internal_node, {rv()}));
-  net.m_res_sec.m_ress.emplace_back(res(internal_node, load_pin1, {rv()}));
-  net.m_res_sec.m_ress.emplace_back(res(internal_node, load_pin2, {rv()}));
+  net.m_res_sec.m_ress.emplace_back(
+      res(driver_pin, internal_node, {rand_cap()}));
+  net.m_res_sec.m_ress.emplace_back(
+      res(internal_node, load_pin1, {rand_cap()}));
+  net.m_res_sec.m_ress.emplace_back(
+      res(internal_node, load_pin2, {rand_cap()}));
 }
 
 void gen_top_net_res_sec(d_net &net, std::size_t block_idx, char hier_div_ch) {
   std::string driver_pin = fmt::format("A{}", block_idx + 1);
   std::string load_pin =
       fmt::format("{}{}{}A", block_prefix, block_idx + 1, hier_div_ch);
-  net.m_res_sec.m_ress.emplace_back(res(driver_pin, load_pin, {rv()}));
+  net.m_res_sec.m_ress.emplace_back(res(driver_pin, load_pin, {rand_cap()}));
 }
 
 void gen_block_nets(SPEF_file &spef) {
@@ -231,6 +313,7 @@ void gen_block_nets(SPEF_file &spef) {
     gen_block_net_cap_sec_ground(net, net_idx, pin_delim_ch);
     gen_block_net_res_sec(net, net_idx, pin_delim_ch);
   }
+  gen_block_net_cap_sec_coupling(spef.m_internal_def.m_d_nets);
 }
 
 void gen_top_nets(SPEF_file &spef) {
@@ -243,6 +326,7 @@ void gen_top_nets(SPEF_file &spef) {
     gen_top_net_cap_sec_ground(net, block_idx, hier_div_ch);
     gen_top_net_res_sec(net, block_idx, hier_div_ch);
   }
+  gen_top_net_cap_sec_coupling(spef.m_internal_def.m_d_nets);
 }
 
 void write_block_spef() {
