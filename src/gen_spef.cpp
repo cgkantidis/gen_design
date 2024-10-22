@@ -15,7 +15,10 @@
 #include "spef.hpp"
 
 // forward declarations
-void gen_header(SPEF_file &spef, std::string design_name);
+void gen_header(
+    SPEF_file &spef,
+    std::string design_name,
+    design_config const &config);
 void gen_block_ports(SPEF_file &spef);
 void gen_top_ports(SPEF_file &spef, design_config const &config);
 void gen_block_nets(SPEF_file &spef, design_config const &config);
@@ -63,12 +66,11 @@ void gen_top_net_cap_sec_coupling(
     design_config const &config);
 
 // RNG helpers
-double rand_cap();
-std::mt19937_64 &get_gen();
 std::uniform_int_distribution<std::size_t>
 get_idx_dist(std::size_t min_idx, std::size_t max_idx);
 std::uniform_real_distribution<double> &get_cap_dist();
-std::string const &get_rand_node(conn_sec const &conns);
+std::string const &
+get_rand_node(conn_sec const &conns, design_config const &config);
 
 void write_block_spef(design_config const &config) {
 #ifdef WRITE_COMPRESSED
@@ -83,7 +85,7 @@ void write_block_spef(design_config const &config) {
 #endif
 
   SPEF_file spef;
-  gen_header(spef, config.block_name);
+  gen_header(spef, config.block_name, config);
   gen_block_ports(spef);
   gen_block_nets(spef, config);
   spef.write(os);
@@ -102,13 +104,16 @@ void write_top_spef(design_config const &config) {
 #endif
 
   SPEF_file spef;
-  gen_header(spef, config.top_name);
+  gen_header(spef, config.top_name, config);
   gen_top_ports(spef, config);
   gen_top_nets(spef, config);
   spef.write(os);
 }
 
-void gen_header(SPEF_file &spef, std::string design_name) {
+void gen_header(
+    SPEF_file &spef,
+    std::string design_name,
+    design_config const &config) {
   spef.m_header_def.m_SPEF_version = "IEEE 1481-1999";
   spef.m_header_def.m_design_name = std::move(design_name);
   {
@@ -133,6 +138,8 @@ void gen_header(SPEF_file &spef, std::string design_name) {
   spef.m_header_def.m_unit_def.m_cap_scale = {1.0, cap_scale::PF};
   spef.m_header_def.m_unit_def.m_res_scale = {1.0, res_scale::KOHM};
   spef.m_header_def.m_unit_def.m_induc_scale = {1.0, induc_scale::HENRY};
+  spef.m_header_def.m_comments.emplace_back(
+      fmt::format("seed = {}", config.seed));
 }
 
 void gen_block_ports(SPEF_file &spef) {
@@ -270,8 +277,8 @@ void gen_block_net_cap_sec_ground(
         config.cell_prefix,
         pin_delim_ch,
         config.lib_cell_inp_pin);
-    net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rand_cap()}));
-    net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {rand_cap()}));
+    net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {config.rand_cap()}));
+    net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {config.rand_cap()}));
     return;
   }
 
@@ -300,10 +307,10 @@ void gen_block_net_cap_sec_ground(
   std::string internal_node =
       fmt::format("{}{}{}1", config.net_prefix, net_idx, pin_delim_ch);
 
-  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rand_cap()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(load_pin1, {rand_cap()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(load_pin2, {rand_cap()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(internal_node, {rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {config.rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(load_pin1, {config.rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(load_pin2, {config.rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(internal_node, {config.rand_cap()}));
 }
 
 void gen_top_net_cap_sec_ground(
@@ -314,8 +321,8 @@ void gen_top_net_cap_sec_ground(
   std::string driver_pin = fmt::format("A{}", block_idx + 1);
   std::string load_pin =
       fmt::format("{}{}{}A", config.block_prefix, block_idx + 1, hier_div_ch);
-  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {rand_cap()}));
-  net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(driver_pin, {config.rand_cap()}));
+  net.m_cap_sec.m_caps.emplace_back(cap(load_pin, {config.rand_cap()}));
 }
 
 void gen_block_net_res_sec(
@@ -330,7 +337,8 @@ void gen_block_net_res_sec(
         config.cell_prefix,
         pin_delim_ch,
         config.lib_cell_inp_pin);
-    net.m_res_sec.m_ress.emplace_back(res(driver_pin, load_pin, {rand_cap()}));
+    net.m_res_sec.m_ress.emplace_back(
+        res(driver_pin, load_pin, {config.rand_cap()}));
     return;
   }
 
@@ -360,11 +368,11 @@ void gen_block_net_res_sec(
       fmt::format("{}{}{}1", config.net_prefix, net_idx, pin_delim_ch);
 
   net.m_res_sec.m_ress.emplace_back(
-      res(driver_pin, internal_node, {rand_cap()}));
+      res(driver_pin, internal_node, {config.rand_cap()}));
   net.m_res_sec.m_ress.emplace_back(
-      res(internal_node, load_pin1, {rand_cap()}));
+      res(internal_node, load_pin1, {config.rand_cap()}));
   net.m_res_sec.m_ress.emplace_back(
-      res(internal_node, load_pin2, {rand_cap()}));
+      res(internal_node, load_pin2, {config.rand_cap()}));
 }
 
 void gen_top_net_res_sec(
@@ -375,31 +383,31 @@ void gen_top_net_res_sec(
   std::string driver_pin = fmt::format("A{}", block_idx + 1);
   std::string load_pin =
       fmt::format("{}{}{}A", config.block_prefix, block_idx + 1, hier_div_ch);
-  net.m_res_sec.m_ress.emplace_back(res(driver_pin, load_pin, {rand_cap()}));
+  net.m_res_sec.m_ress.emplace_back(
+      res(driver_pin, load_pin, {config.rand_cap()}));
 }
 
 void gen_block_net_cap_sec_coupling(
     std::vector<d_net> &nets,
     design_config const &config) {
-  auto &gen = get_gen();
   auto net_idx_dist = get_idx_dist(0, nets.size() - 1);
 
   for (std::size_t idx1 = 0; idx1 < nets.size(); ++idx1) {
     // we have 4 ground caps already
     while (nets[idx1].m_cap_sec.m_caps.size() < config.min_num_ccaps + 4) {
 
-      std::size_t idx2 = net_idx_dist(gen);
+      std::size_t idx2 = net_idx_dist(config.gen);
       // don't generate self-coupling caps
       while (idx1 == idx2) {
-        idx2 = net_idx_dist(gen);
+        idx2 = net_idx_dist(config.gen);
       }
 
       d_net &net1 = nets[idx1];
       d_net &net2 = nets[idx2];
 
-      std::string const &node1 = get_rand_node(net1.m_conn_sec);
-      std::string const &node2 = get_rand_node(net2.m_conn_sec);
-      auto caps = {rand_cap()};
+      std::string const &node1 = get_rand_node(net1.m_conn_sec, config);
+      std::string const &node2 = get_rand_node(net2.m_conn_sec, config);
+      auto caps = {config.rand_cap()};
       net1.m_cap_sec.m_caps.emplace_back(node1, node2, caps);
       net2.m_cap_sec.m_caps.emplace_back(node2, node1, caps);
     }
@@ -409,40 +417,27 @@ void gen_block_net_cap_sec_coupling(
 void gen_top_net_cap_sec_coupling(
     std::vector<d_net> &nets,
     design_config const &config) {
-  auto &gen = get_gen();
   auto net_idx_dist = get_idx_dist(0, nets.size() - 1);
 
   for (std::size_t idx1 = 0; idx1 < nets.size(); ++idx1) {
     // we have 2 ground caps already
     while (nets[idx1].m_cap_sec.m_caps.size() < config.min_num_ccaps + 2) {
-      std::size_t idx2 = net_idx_dist(gen);
+      std::size_t idx2 = net_idx_dist(config.gen);
       // don't generate self-coupling caps
       while (idx1 == idx2) {
-        idx2 = net_idx_dist(gen);
+        idx2 = net_idx_dist(config.gen);
       }
 
       d_net &net1 = nets[idx1];
       d_net &net2 = nets[idx2];
 
-      std::string const &node1 = get_rand_node(net1.m_conn_sec);
-      std::string const &node2 = get_rand_node(net2.m_conn_sec);
-      auto caps = {rand_cap()};
+      std::string const &node1 = get_rand_node(net1.m_conn_sec, config);
+      std::string const &node2 = get_rand_node(net2.m_conn_sec, config);
+      auto caps = {config.rand_cap()};
       net1.m_cap_sec.m_caps.emplace_back(node1, node2, caps);
       net2.m_cap_sec.m_caps.emplace_back(node2, node1, caps);
     }
   }
-}
-
-double rand_cap() {
-  return get_cap_dist()(get_gen());
-}
-
-std::mt19937_64 &get_gen() {
-  // TODO: add command line option to specify seed value for the RNG to
-  // reproduce the same SPEF
-  static std::random_device rd;
-  static std::mt19937_64 gen(rd());
-  return gen;
 }
 
 std::uniform_int_distribution<std::size_t>
@@ -455,15 +450,15 @@ std::uniform_real_distribution<double> &get_cap_dist() {
   return dist;
 }
 
-std::string const &get_rand_node(conn_sec const &conns) {
+std::string const &
+get_rand_node(conn_sec const &conns, design_config const &config) {
   auto const &pins = conns.m_conn_def;
   auto const &nodes = conns.m_internal_node_coord;
   auto const num_pins = pins.size();
   auto const num_nodes = num_pins + nodes.size();
 
-  auto &gen = get_gen();
   auto node_idx_dist = get_idx_dist(0, num_nodes - 1);
-  auto node_idx = node_idx_dist(gen);
+  auto node_idx = node_idx_dist(config.gen);
   if (node_idx < num_pins) {
     return pins[node_idx].m_name;
   }

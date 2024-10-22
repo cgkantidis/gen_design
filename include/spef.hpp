@@ -226,6 +226,7 @@ public:
   pin_delim m_pin_delim;
   bus_delim m_bus_delim;
   unit_def m_unit_def;
+  std::vector<std::string> m_comments;
 
   template <typename OSTREAM>
   void write(OSTREAM &os) const {
@@ -240,6 +241,9 @@ public:
     m_pin_delim.write(os);
     m_bus_delim.write(os);
     m_unit_def.write(os);
+    for (auto const &comment : m_comments) {
+      fmt::println(os, "// {}", comment);
+    }
   }
 };
 

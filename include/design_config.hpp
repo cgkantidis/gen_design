@@ -2,6 +2,8 @@
 #define DESIGN_CONFIG_HPP
 
 #include <string>
+#include <random>
+#include <fmt/base.h>
 
 // default config values
 
@@ -27,6 +29,9 @@ static constexpr std::size_t MIN_NUM_CCAPS{5};
 
 class design_config {
 public:
+  unsigned int seed{};
+  mutable std::mt19937_64 gen;
+  mutable std::uniform_real_distribution<double> cap_dist;
   std::size_t num_nets{NUM_NETS};
   std::size_t num_blocks{NUM_BLOCKS};
   std::size_t num_cols{NUM_COLS};
@@ -43,6 +48,16 @@ public:
   double min_cap_val{MIN_CAP_VAL};
   double max_cap_val{MAX_CAP_VAL};
   std::size_t min_num_ccaps{MIN_NUM_CCAPS};
+
+  void init_rand() {
+    fmt::println("Using seed {}", seed);
+    gen = std::mt19937_64(seed);
+    cap_dist = std::uniform_real_distribution<double>(min_cap_val, max_cap_val);
+  }
+
+  double rand_cap() const {
+    return cap_dist(gen);
+  }
 };
 
 #endif  // DESIGN_CONFIG_HPP
