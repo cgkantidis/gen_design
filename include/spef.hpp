@@ -1,8 +1,9 @@
-#include <array>
+#ifndef SPEF_HPP
+#define SPEF_HPP
+
 #include <fmt/format.h>
 #include <libassert/assert.hpp>
 #include <map>
-#include <numeric>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -635,3 +636,4 @@ public:
     m_internal_def.write(os);
   }
 };
+#endif  // SPEF_HPP

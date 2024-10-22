@@ -24,8 +24,15 @@ FetchContent_Declare(
   GIT_TAG origin/main
   OVERRIDE_FIND_PACKAGE
 )
+FetchContent_Declare(
+  cxxopts
+  GIT_REPOSITORY https://github.com/jarro2783/cxxopts
+  GIT_TAG origin/master
+  OVERRIDE_FIND_PACKAGE
+)
 find_package(fmt REQUIRED)
 find_package(libassert REQUIRED)
+find_package(cxxopts REQUIRED)
 
 set(WRITE_COMPRESSED OFF CACHE BOOL "Write a compressed output file (OFF by default)")
 if(WRITE_COMPRESSED)
