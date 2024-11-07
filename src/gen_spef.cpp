@@ -392,9 +392,16 @@ void gen_block_net_cap_sec_coupling(
     design_config const &config) {
   auto net_idx_dist = get_idx_dist(0, nets.size() - 1);
 
+  std::size_t num_ground_caps = 2;
   for (std::size_t idx1 = 0; idx1 < nets.size(); ++idx1) {
-    // we have 4 ground caps already
-    while (nets[idx1].m_cap_sec.m_caps.size() < config.min_num_ccaps + 4) {
+    // we already have `num_ground_caps` ground caps
+    ASSERT(
+        nets[idx1].m_cap_sec.m_caps.size() >= num_ground_caps,
+        "fewer than expected ground capacitances",
+        nets[idx1].m_cap_sec.m_caps);
+    while (nets[idx1].m_cap_sec.m_caps.size()
+           < config.min_num_ccaps + num_ground_caps) {
+      fmt::println("size={}", nets[idx1].m_cap_sec.m_caps.size());
 
       std::size_t idx2 = net_idx_dist(config.gen);
       // don't generate self-coupling caps
@@ -411,6 +418,7 @@ void gen_block_net_cap_sec_coupling(
       net1.m_cap_sec.m_caps.emplace_back(node1, node2, caps);
       net2.m_cap_sec.m_caps.emplace_back(node2, node1, caps);
     }
+    num_ground_caps = 4;
   }
 }
 
@@ -419,9 +427,15 @@ void gen_top_net_cap_sec_coupling(
     design_config const &config) {
   auto net_idx_dist = get_idx_dist(0, nets.size() - 1);
 
+  std::size_t const num_ground_caps = 2;
   for (std::size_t idx1 = 0; idx1 < nets.size(); ++idx1) {
-    // we have 2 ground caps already
-    while (nets[idx1].m_cap_sec.m_caps.size() < config.min_num_ccaps + 2) {
+    ASSERT(
+        nets[idx1].m_cap_sec.m_caps.size() >= num_ground_caps,
+        "fewer than expected ground capacitances",
+        nets[idx1].m_cap_sec.m_caps);
+    // we already have `num_ground_caps` ground caps
+    while (nets[idx1].m_cap_sec.m_caps.size()
+           < config.min_num_ccaps + num_ground_caps) {
       std::size_t idx2 = net_idx_dist(config.gen);
       // don't generate self-coupling caps
       while (idx1 == idx2) {

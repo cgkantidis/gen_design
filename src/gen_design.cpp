@@ -21,6 +21,10 @@ int main(int argc, char const *const *argv) {
       "The number of block hierarchies in the top hierarchy",
       cxxopts::value<std::size_t>());
   opt_adder(
+      "c,num_ccaps",
+      "The minimum number of coupling capacitances each net will have",
+      cxxopts::value<std::size_t>());
+  opt_adder(
       "s,seed",
       "The seed for the random number generator",
       cxxopts::value<unsigned int>());
@@ -38,6 +42,9 @@ int main(int argc, char const *const *argv) {
   }
   if (result.count("num_blocks") != 0) {
     config.num_blocks = result["num_blocks"].as<std::size_t>();
+  }
+  if (result.count("num_ccaps") != 0) {
+    config.min_num_ccaps = result["num_ccaps"].as<std::size_t>();
   }
   if (result.count("seed") != 0) {
     config.seed = result["seed"].as<unsigned int>();
