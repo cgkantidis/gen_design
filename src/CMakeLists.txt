@@ -12,6 +12,8 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL PPROF)
   target_link_libraries(gen_design PRIVATE tcmalloc)
+elseif(CMAKE_BUILD_TYPE STREQUAL ASAN)
+  target_link_options(gen_design PRIVATE -fsanitize=address)
 elseif(CMAKE_BUILD_TYPE STREQUAL TSAN)
   target_link_options(gen_design PRIVATE -fsanitize=thread)
 elseif(CMAKE_BUILD_TYPE STREQUAL MSAN)
